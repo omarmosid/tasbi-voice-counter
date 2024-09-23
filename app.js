@@ -2,8 +2,8 @@ let counter = 0;
 let recognizing = false;
 let recognition;
 let selectedPhrase = "سبحان الله"; // Default phrase
+let restartRecognitionTimeout;
 
-// Get the phrase from the select menu
 const phraseSelect = document.getElementById("phraseSelect");
 phraseSelect.addEventListener("change", () => {
   selectedPhrase = phraseSelect.value.trim().toLowerCase();
@@ -30,7 +30,7 @@ function startRecognition() {
 
   recognition = new webkitSpeechRecognition();
   recognition.continuous = true;
-  recognition.interimResults = true; // Enable interim results for live stream
+  recognition.interimResults = true;
   recognition.lang = "ar-SA"; // Arabic (Saudi Arabia)
 
   recognition.onstart = () => {
@@ -38,10 +38,7 @@ function startRecognition() {
     document.getElementById("toggleButton").textContent = "Pause";
     document.getElementById("toggleButton").classList.remove("bg-green-500");
     document.getElementById("toggleButton").classList.add("bg-yellow-500");
-
-    // Show the flashing "Listening..." indicator
     document.getElementById("listeningIndicator").classList.remove("hidden");
-
     console.log("Voice recognition started.");
   };
 
@@ -50,11 +47,8 @@ function startRecognition() {
     for (let i = event.resultIndex; i < event.results.length; ++i) {
       liveTranscript += event.results[i][0].transcript;
     }
-
-    // Display the live transcript on the screen
     document.getElementById("liveTranscript").textContent = liveTranscript;
 
-    // Check if the final result matches the selected phrase
     if (event.results[event.resultIndex].isFinal) {
       const transcript = event.results[event.resultIndex][0].transcript
         .trim()
@@ -70,26 +64,35 @@ function startRecognition() {
   recognition.onerror = (event) => {
     console.error("Error occurred in recognition:", event.error);
     alert("Sorry, your browser does not support speech recognition.");
+    restartRecognition();
   };
 
   recognition.onend = () => {
-    console.log("Voice recognition ended.");
+    console.log("Recognition ended, restarting...");
+    if (recognizing) {
+      restartRecognition();
+    }
   };
 
   recognition.start();
 }
 
+function restartRecognition() {
+  clearTimeout(restartRecognitionTimeout);
+  restartRecognitionTimeout = setTimeout(() => {
+    recognition.start();
+  }, 500); // Delay before restarting recognition
+}
+
 function pauseRecognition() {
   if (recognizing) {
-    recognition.stop();
     recognizing = false;
+    recognition.stop();
     document.getElementById("toggleButton").textContent = "Start";
     document.getElementById("toggleButton").classList.remove("bg-yellow-500");
     document.getElementById("toggleButton").classList.add("bg-green-500");
-
-    // Hide the flashing "Listening..." indicator
     document.getElementById("listeningIndicator").classList.add("hidden");
-
+    clearTimeout(restartRecognitionTimeout);
     console.log("Voice recognition paused.");
   }
 }
