@@ -3,7 +3,7 @@ let recognizing = false;
 let recognition;
 let selectedPhrase = "سبحان الله"; // Default phrase
 
-// Get phrase from the select menu
+// Get the phrase from the select menu
 const phraseSelect = document.getElementById("phraseSelect");
 phraseSelect.addEventListener("change", () => {
   selectedPhrase = phraseSelect.value.trim().toLowerCase();
@@ -30,7 +30,7 @@ function startRecognition() {
 
   recognition = new webkitSpeechRecognition();
   recognition.continuous = true;
-  recognition.interimResults = false;
+  recognition.interimResults = true; // Enable interim results for live stream
   recognition.lang = "ar-SA"; // Arabic (Saudi Arabia)
 
   recognition.onstart = () => {
@@ -46,13 +46,24 @@ function startRecognition() {
   };
 
   recognition.onresult = (event) => {
-    const transcript = event.results[event.resultIndex][0].transcript
-      .trim()
-      .toLowerCase();
-    console.log("You said:", transcript);
+    let liveTranscript = "";
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      liveTranscript += event.results[i][0].transcript;
+    }
 
-    if (transcript === selectedPhrase && recognizing) {
-      incrementCounter();
+    // Display the live transcript on the screen
+    document.getElementById("liveTranscript").textContent = liveTranscript;
+
+    // Check if the final result matches the selected phrase
+    if (event.results[event.resultIndex].isFinal) {
+      const transcript = event.results[event.resultIndex][0].transcript
+        .trim()
+        .toLowerCase();
+      console.log("Final result:", transcript);
+
+      if (transcript === selectedPhrase && recognizing) {
+        incrementCounter();
+      }
     }
   };
 
